@@ -58,6 +58,10 @@ public class BufferQueue {
 			System.out.println("p4bin.dat not found");
 			e.printStackTrace();
 		}
+        
+        for(int i = 0; i < max; i++){
+        	this.push(new Buffer(buffSize));
+        }
 	}
 
 	/**
@@ -213,7 +217,7 @@ public class BufferQueue {
     	int off = mem.pos%buffSize;    	
 		byte[] temp = new byte[numBytes];
 		
-		if(containsBlock((int)mem.pos/buffSize)){
+		if(containsBlock((int)mem.block)){
 			for(int i = 0; i < numBytes; i++){
 				temp[i] = current.data.buff.get(off);
 			}

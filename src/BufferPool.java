@@ -75,10 +75,10 @@ public class BufferPool {
      * @return
      */
     public byte[] getByteArray(MemHandle mem){
-    	byte[] b = new byte[2];
+    	byte[] b = new byte[4];
     	b = buffers.getBytes(mem,2);
     	ByteBuffer temp = ByteBuffer.wrap(b);
-    	int s = temp.getInt();
+    	int s = temp.getShort();
     	byte[] ret = new byte[1000];
     	ret = buffers.getBytes((short)(mem.pos+2), s);
     	return ret;
