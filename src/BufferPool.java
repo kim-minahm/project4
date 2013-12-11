@@ -34,22 +34,22 @@ public class BufferPool {
 		Buffer current = new Buffer(blocksize);
 		// checks for block.
 		if (mem.block < file.size() - 1) {
-			//it fits within the buffer
+			// it fits within the buffer
 			if (offset(mem.pos) + space.length < blocksize) {
 				current = file.get(mem.block);
 				ByteBuffer dat = current.buff;
 				dat.position(offset(mem.getHandle()));
 				dat.put(space);
-			}else{
+			} else {
 				current = file.get(mem.block);
-				Buffer current2 = file.get(mem.block+1);
+				Buffer current2 = file.get(mem.block + 1);
 				ByteBuffer dat = current.buff;
 				ByteBuffer dat2 = current2.buff;
-				int diff = offset(mem.pos)+space.length - blocksize;
+				int diff = offset(mem.pos) + space.length - blocksize;
 				dat.position(offset(mem.getHandle()));
-				dat.put(space,0,space.length-diff);
+				dat.put(space, 0, space.length - diff);
 				dat2.position(0);
-				dat2.put(space,space.length-diff,diff);
+				dat2.put(space, space.length - diff, diff);
 			}
 		} else {
 			while (file.size() - 1 <= mem.block) {
@@ -76,10 +76,26 @@ public class BufferPool {
 		current.buff.get(b, 0, 2);
 		ByteBuffer temp = ByteBuffer.wrap(b);
 		int s = temp.getShort();
-		byte[] ret = new byte[1000];
-		current.buff.position(offset(mem.pos)+2);
-		current.buff.get(ret, 0, s);
-		return ret;
+		if (offset(mem.pos) + s < blocksize) {
+			byte[] ret = new byte[1000];
+			current.buff.position(offset(mem.pos) + 2);
+			current.buff.get(ret, 0, s);
+			return ret;
+		} else {
+			int diff = blocksize - offset(mem.pos);
+			byte[] ret = new byte[1000];
+			byte[] ret2 = new byte[1000];
+			current.buff.position(offset(mem.pos) + 2);
+			current.buff.get(ret, 0, s - diff);
+			current = file.get(mem.block + 1);
+			current.buff.position(0);
+			current.buff.get(ret2, 0, diff);
+			int base = ret.length;
+			for (int i = 0; i < ret2.length; i++) {
+				ret[base + i] = ret2[i];
+			}
+			return ret;
+		}
 	}
 
 	/**
@@ -94,12 +110,43 @@ public class BufferPool {
 		current.buff.get(b, offset(mem.pos), 1);
 		ByteBuffer temp = ByteBuffer.wrap(b);
 		int s = temp.get();
-		if (s == 1) {// 5 bytes, 1 sig, 4 handle
-			current.buff.get(b, offset(mem.pos), 5);
-		} else {// 9 bytes, 1 sig, 4 leftchild, 4 rightchile
-			current.buff.get(b, offset(mem.pos), 9);
+		int sz;
+		if (s == 1) {
+			sz = 5;
+		} else {
+			sz = 9;
 		}
-		return b;
+		if (offset(mem.pos) + sz < blocksize) {
+			if (s == 1) {// 5 bytes, 1 sig, 4 handle
+				current.buff.get(b, offset(mem.pos), 5);
+			} else {// 9 bytes, 1 sig, 4 leftchild, 4 rightchile
+				current.buff.get(b, offset(mem.pos), 9);
+			}
+			return b;
+		} else {
+			int diff;
+			byte[] b2 = new byte[10];
+			if (s == 1) {// 5 bytes, 1 sig, 4 handle
+				diff = blocksize - (offset(mem.pos)+5);
+				current.buff.position(offset(mem.pos));
+				current.buff.get(b,0,offset(mem.pos)-diff );
+				current = file.get(mem.block+1);
+				current.buff.position(0);
+				current.buff.get(b2,0,offset(mem.pos)-diff );
+			} else {// 9 bytes, 1 sig, 4 leftchild, 4 rightchile
+				diff = blocksize - (offset(mem.pos)+9);
+				current.buff.position(offset(mem.pos));
+				current.buff.get(b,0,offset(mem.pos)-diff );
+				current = file.get(mem.block+1);
+				current.buff.position(0);
+				current.buff.get(b2,0,offset(mem.pos)-diff );
+				int base = b.length;
+				for (int i = 0; i < b2.length; i++) {
+					b[base + i] = b2[i];
+				}
+			}
+			return b;
+		}
 	}
 
 	public void removeWatcher(MemHandle mem) {
