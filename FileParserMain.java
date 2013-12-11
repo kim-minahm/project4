@@ -58,6 +58,8 @@ public class FileParserMain {
 			            	Buffer n = bq.pop();
 			            	int buffNum = n.blockNum;
 			            	System.out.println("Block ID of buffer" + i + " is " + buffNum);
+			            	i++;
+			            	
 			            }
 					}
 				}
