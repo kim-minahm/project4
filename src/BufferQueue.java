@@ -4,6 +4,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
+import java.util.LinkedList;
 
 public class BufferQueue {
 
@@ -33,7 +34,9 @@ public class BufferQueue {
 	private int buffSize;
 	private short filesize;
 	
-    private RandomAccessFile file;
+	private LinkedList<Buffer> file = new LinkedList<Buffer>();
+	
+//    private RandomAccessFile file;
 	
 
 	/**
@@ -51,13 +54,13 @@ public class BufferQueue {
 		max = numBuffs;
 		buffSize = buffSizes;
 		
-        try {
-			file = new RandomAccessFile("p4bin.dat", "rw");
-	        filesize = 0; 
-		} catch (FileNotFoundException e) {
-			System.out.println("p4bin.dat not found");
-			e.printStackTrace();
-		}
+//        try {
+//			file = new RandomAccessFile("p4bin.dat", "rw");
+//	        filesize = 0; 
+//		} catch (FileNotFoundException e) {
+//			System.out.println("p4bin.dat not found");
+//			e.printStackTrace();
+//		}
         
         for(int i = 0; i < max; i++){
         	this.push(new Buffer(buffSize));
@@ -92,12 +95,13 @@ public class BufferQueue {
 	public Buffer pop() {
 		if (size > 0) {
 			if(tail.prev.data.dirty){
-				try {
-					file.seek(tail.prev.data.blockNum*buffSize);
-					file.write(tail.prev.data.buff.array(), 0, tail.prev.data.buff.array().length);
-				} catch (IOException e) {
-					e.printStackTrace();
-				}
+//				try {
+//					file.seek(tail.prev.data.blockNum*buffSize);
+//					file.write(tail.prev.data.buff.array(), 0, tail.prev.data.buff.array().length);
+//				} catch (IOException e) {
+//					e.printStackTrace();
+//				}
+				
 			}
 			tail.prev.prev.next = tail;
 			tail.prev = tail.prev.prev;
@@ -186,31 +190,34 @@ public class BufferQueue {
 	}
 	
 	private void loadBuffer(int block){
-		if(filesize/buffSize < block){
-			Buffer buff = new Buffer(buffSize);
-			buff.blockNum = block;
-			filesize = (short) (filesize+buffSize);
-			buff.dirty = false;
-			push(buff);
-			return;
+//		if(filesize/buffSize < block){
+//			Buffer buff = new Buffer(buffSize);
+//			buff.blockNum = block;
+//			filesize = (short) (filesize+buffSize);
+//			buff.dirty = false;
+//			push(buff);
+//			return;
+//		}
+//		short pos = (short) (block * buffSize);
+//		byte[] buff = new byte[buffSize];
+//		try {
+//			file.seek(pos);
+//		} catch (IOException e) {
+//			// TODO Auto-generated catch block
+//			e.printStackTrace();
+//		}
+//		try {
+//			file.read(buff, 0, buffSize);
+//		} catch (IOException e) {
+//			// TODO Auto-generated catch block
+//			e.printStackTrace();
+//		}
+//		Buffer b = new Buffer(buffSize);
+//		b.buff = ByteBuffer.wrap(buff);
+//		this.push(b);
+		if(!containsBlock(block)&&filesize/buffSize > block){
+			this.push(file.get(block));
 		}
-		short pos = (short) (block * buffSize);
-		byte[] buff = new byte[buffSize];
-		try {
-			file.seek(pos);
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		try {
-			file.read(buff, 0, buffSize);
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		Buffer b = new Buffer(buffSize);
-		b.buff = ByteBuffer.wrap(buff);
-		this.push(b);
 	}
 
 	public byte[] getBytes(MemHandle mem, int numBytes){
@@ -224,6 +231,13 @@ public class BufferQueue {
 			return temp;
 		}
 		return null;
+	}
+	
+	public void grow(){
+		filesize =(short) (filesize+buffSize);
+		file.add(new Buffer(buffSize));
+		file.getLast().blockNum = file.size()-1;
+		this.push(file.getLast());
 	}
 	
 	public byte[] getBytes(short pos, int numBytes){
@@ -240,12 +254,12 @@ public class BufferQueue {
 	}
 	
 	public void close(){
-		try {
-			file.close();
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
+//		try {
+//			file.close();
+//		} catch (IOException e) {
+//			// TODO Auto-generated catch block
+//			e.printStackTrace();
+//		}
 		for(int i = 0; i < size; i++){
 			pop();
 		}

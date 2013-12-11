@@ -52,8 +52,12 @@ public class MemManager<T> {
 		return pos;
 	}
 
-	public void release(MemHandle h) {
-		buffer.remove(h);
+	public void releaseWatcher(MemHandle h) {
+		buffer.removeWatcher(h);
+	}
+	
+	public void releaseNode(MemHandle h){
+		buffer.removeNode(h);
 	}
 
 	public byte[] getRecord(MemHandle h) {

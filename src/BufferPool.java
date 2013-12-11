@@ -1,5 +1,6 @@
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.LinkedList;
 
 public class BufferPool {
 	private int blocksize;
@@ -9,16 +10,14 @@ public class BufferPool {
 	private int numDiskReads;
 	private int numDiskWrites;
 
-	BufferQueue buffers;
+	// BufferQueue buffers;
 	private long filesize; // filesize won't change
+	LinkedList<Buffer> file = new LinkedList<Buffer>();
 
 	public BufferPool(String filename, int blockSize, int numberOfBuffers)
 			throws IOException {
 
 		blocksize = blockSize;
-
-		// create a set of buffers we can use
-		buffers = new BufferQueue(numberOfBuffers, blockSize);
 
 		// stats
 		numCacheHits = 0;
@@ -32,38 +31,21 @@ public class BufferPool {
 	}
 
 	public void insert(byte[] space, MemHandle mem) {
-		Buffer buff = buffers.getBufferByBlock(mem.block);
-		if (buff != null) {
-			if (offset(mem.getHandle()) + space.length < blocksize) {
-				buff.buff.position(offset(mem.getHandle()));
-				buff.buff.put(space, 0, space.length);
-				buff.dirty = true;
-			} else {// buffer will not hold it
-				byte[] s = new byte[blocksize];
-				int diff = blocksize - offset(mem.pos);
-				for (int i = 0; i < diff; i++) {
-					s[i] = space[i];
-				}
-				buff.buff.put(s, offset(mem.getHandle()), s.length);
-				loadBlock(mem.block + 1);
-				int count = 0;
-				for (int i = diff; i < space.length; i++) {
-					s[count] = space[i];
-					count++;
-				}
-				buff.buff.position(offset(mem.getHandle()));
-				buff.buff.put(s, 0, count);
-			}
-
+		Buffer current;
+		if (mem.block < file.size()) {
+			current = file.get(mem.block);
+			ByteBuffer dat = current.buff;
+			dat.position(offset(mem.getHandle()));
+			dat.put(space);
 		} else {
-			buff = new Buffer(blocksize);
-			buff.blockNum = buffers.getFileSize() / blocksize;
-			// needs to write a new chunk of memory
-			numDiskWrites++;
-			// must load the new buffer just added
-			numDiskReads++;
-			buff.buff = ByteBuffer.allocate(blocksize);
-			filesize = filesize + blocksize;
+			while (file.size() < mem.block) {
+				file.add(new Buffer(blocksize));
+				file.get(file.size() - 1).blockNum = file.size() - 1;
+			}
+			current = file.get(mem.block);
+			ByteBuffer dat = current.buff;
+			dat.position(offset(mem.getHandle()));
+			dat.put(space);
 		}
 	}
 
@@ -74,12 +56,13 @@ public class BufferPool {
 	 * @return
 	 */
 	public byte[] getWatcherData(MemHandle mem) {
-		byte[] b = new byte[4];
-		b = buffers.getBytes(mem, 2);
+		Buffer current = file.get(mem.block);
+		byte[] b = new byte[2];
+		current.buff.get(b, offset(mem.pos), 2);
 		ByteBuffer temp = ByteBuffer.wrap(b);
 		int s = temp.getShort();
 		byte[] ret = new byte[1000];
-		ret = buffers.getBytes((short) (mem.pos + 2), s);
+		current.buff.get(ret, offset(mem.pos) + 2, s);
 		return ret;
 	}
 
@@ -90,40 +73,42 @@ public class BufferPool {
 	 * @return
 	 */
 	public byte[] getNodeData(MemHandle mem) {
-		byte[] b = new byte[4];
-		b = buffers.getBytes(mem, 1);
+		Buffer current = file.get(mem.block);
+		byte[] b = new byte[10];
+		current.buff.get(b, offset(mem.pos), 1);
 		ByteBuffer temp = ByteBuffer.wrap(b);
 		int s = temp.get();
 		if (s == 1) {// 5 bytes, 1 sig, 4 handle
-			return buffers.getBytes(mem, 5);
-		}// 9 bytes, 1 sig, 4 leftchild, 4 rightchile
-		return buffers.getBytes(mem, 9);
+			current.buff.get(b, offset(mem.pos), 5);
+		}else{// 9 bytes, 1 sig, 4 leftchild, 4 rightchile
+			current.buff.get(b, offset(mem.pos), 9);
+		}
+		return b;
 	}
 
-	public void remove(MemHandle mem) {
-		short pos = mem.getHandle();
-		int block = (int) pos / blocksize;
-		int off = pos % blocksize;
-		Buffer buff = buffers.getBufferByBlock(block);
-		if (buff == null) {
-			// load buffer from file
-		}
-		int size = buffers.getBytes(mem, 2).length;
-		ByteBuffer empty = ByteBuffer.allocate(size);
-		// +2 because first two bytes represent size
-		buff.buff.put(empty.array(), off, empty.array().length);
+	public void removeWatcher(MemHandle mem) {
+		Buffer current = file.get(mem.block);
+		byte[] b = new byte[2];
+		current.buff.get(b, offset(mem.pos), 2);
+		ByteBuffer temp = ByteBuffer.wrap(b);
+		int s = temp.getShort();
+		byte[] ret = new byte[s];
+		current.buff.position(offset(mem.pos));
+		current.buff.put(ret, offset(mem.pos), s);		
 	}
-
-	public void loadBlock(int block) {
-		Buffer buff = buffers.getBufferByBlock(block);
-		if (buff == null) {
-			numDiskReads++;
-			filesize = filesize + blocksize;
-			buffers.push(buff);
-		} else {
-			buffers.push(buff);
+	
+	public void removeNode(MemHandle mem){
+		Buffer current = file.get(mem.block);
+		byte[] b = new byte[10];
+		current.buff.get(b, offset(mem.pos), 1);
+		ByteBuffer temp = ByteBuffer.wrap(b);
+		int s = temp.get();
+		current.buff.position(offset(mem.pos));
+		if (s == 1) {// 5 bytes, 1 sig, 4 handle
+			current.buff.put(new byte[5], offset(mem.pos), 5);
+		}else{// 9 bytes, 1 sig, 4 leftchild, 4 rightchile
+			current.buff.put(new byte[9], offset(mem.pos), 9);
 		}
-
 	}
 
 	/**
@@ -132,9 +117,6 @@ public class BufferPool {
 	 * @param b
 	 *            buffer to write to disk
 	 */
-	public void close() {
-		buffers.close();
-	}
 
 	private int offset(short b) {
 		return (int) b % blocksize;

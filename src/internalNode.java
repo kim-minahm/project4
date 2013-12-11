@@ -51,7 +51,7 @@ public class internalNode extends binNode {
 	}
 	
 	public void setLeftNull(MemManager mm){
-		mm.release(this.handle);
+		mm.releaseNode(this.handle);
 		super.byteArray.putShort(1, (short) -1);
 		MemHandle temp = super.handle;
 		this.handle = mm.insert(this.byteArray.array(), this.byteArray.array().length);
