@@ -31,14 +31,14 @@ public class BufferPool {
 	}
 
 	public void insert(byte[] space, MemHandle mem) {
-		Buffer current;
-		if (mem.block < file.size()) {
+		Buffer current = new Buffer(blocksize);
+		if (mem.block < file.size() - 1 ) {
 			current = file.get(mem.block);
 			ByteBuffer dat = current.buff;
 			dat.position(offset(mem.getHandle()));
 			dat.put(space);
 		} else {
-			while (file.size() < mem.block) {
+			while (file.size() - 1 <= mem.block ) {
 				file.add(new Buffer(blocksize));
 				file.get(file.size() - 1).blockNum = file.size() - 1;
 			}

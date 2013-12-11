@@ -11,8 +11,7 @@ public class bintree {
 	/**
 	 * Singleton instance for the empty leaf;
 	 */
-	public LeafNode emptyLeafFlyweight;
-	public LeafNode e; // internalNodes should hold left/right
+	public emptyLeaf e; // internalNodes should hold left/right
 						// internalNodes should hold left/right, e should be the
 						// emptyCase or -1
 						//
@@ -30,9 +29,7 @@ public class bintree {
 	 */
 	public bintree(int bufNum, int bufSize) {
 		memManage = new MemManager(bufNum, bufSize);
-		double[] emptyCoords = { -500, -500 }; // Out of Range, so will never visit (also comapre to )
-		e = new LeafNode(emptyCoords, " ", memManage); // Sets the empty Flyweight
-														// flyweight
+		e = new emptyLeaf(memManage); // Sets the empty Flyweight
 		// for this case: maxX is 360, maxY is 180
 		maxX = 360;
 		maxY = 180;
@@ -278,8 +275,8 @@ public class bintree {
 				// getData becomes ping memHandler.getDataByHandle();
 				if ((lLeaf.getData(memManage)[0] == coords[0])
 						&& (lLeaf.getData(memManage)[1] == coords[1])) {
-					binNode inLeft = inNode.getLeft();
-					memManage.release(inLeft.handle);
+					memManage.releaseWatcher(lLeaf.getHandleToWatcher());
+					memManage.releaseNode(lLeaf.handle);
 					inNode.setLeft(e, memManage);
 				}
 
@@ -288,8 +285,8 @@ public class bintree {
 				LeafNode rLeaf = (LeafNode) right;
 				if ((rLeaf.getData(memManage)[0] == coords[0])
 						&& (rLeaf.getData(memManage)[1] == coords[1])) {
-					binNode inRight = inNode.getRight();
-					memManage.release(inRight.handle);
+					memManage.releaseWatcher(rLeaf.getHandleToWatcher());
+					memManage.releaseNode(rLeaf.handle);
 					inNode.setRight(e, memManage);
 				}
 			}

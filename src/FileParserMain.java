@@ -51,13 +51,12 @@ public class FileParserMain {
 					{
 						//bintree
 			            handleTree.inOrder();
-			            BufferQueue bq = handleTree.memManage.buffer.buffers;
+			            //BufferQueue bq = handleTree.memManage.buffer.buffers;
 			            
 			            int i = 0;
-			            while(i < bq.size){
-			            	Buffer n = bq.pop();
-			            	int buffNum = n.blockNum;
-			            	System.out.println("Block ID of buffer" + i + " is " + buffNum);
+			            while(i < bufferNum){
+			            	System.out.println("Block ID of buffer" + i + " is " + i);
+			            	i++;
 			            }
 					}
 				}

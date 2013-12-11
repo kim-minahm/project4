@@ -60,6 +60,11 @@ public class LeafNode extends binNode {
 		return handle;
 	}
 	
+	public MemHandle getHandleToWatcher(){
+		MemHandle out = new MemHandle(super.byteArray.getShort(1));
+		return out;
+	}
+	
 	
 	/**
 	 * Returns the coordinates in double format following getting by MemManager
