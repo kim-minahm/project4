@@ -118,6 +118,7 @@ public class bintree {
 	private binNode inserter(binNode n, double[] coords, String key,
 			double[] splits, double[] prevSplits, int level) {
 		if (n == e) { // if Empty
+			System.out.println("Watcher" + key + " has been added.");
 			return new LeafNode(coords, key, memManage);
 		} else if (n instanceof LeafNode) { // if leaf Node
 			LeafNode A = (LeafNode) n;
