@@ -49,7 +49,7 @@ public class BufferPool {
 				dat.position(offset(mem.getHandle()));
 				dat.put(space,0,space.length-diff);
 				dat2.position(0);
-				dat.put(space,space.length-diff,diff);
+				dat2.put(space,space.length-diff,diff);
 			}
 		} else {
 			while (file.size() - 1 <= mem.block) {
@@ -72,11 +72,13 @@ public class BufferPool {
 	public byte[] getWatcherData(MemHandle mem) {
 		Buffer current = file.get(mem.block);
 		byte[] b = new byte[2];
-		current.buff.get(b, offset(mem.pos), 2);
+		current.buff.position(offset(mem.pos));
+		current.buff.get(b, 0, 2);
 		ByteBuffer temp = ByteBuffer.wrap(b);
 		int s = temp.getShort();
 		byte[] ret = new byte[1000];
-		current.buff.get(ret, offset(mem.pos) + 2, s);
+		current.buff.position(offset(mem.pos)+2);
+		current.buff.get(ret, 0, s);
 		return ret;
 	}
 
