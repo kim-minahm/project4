@@ -118,7 +118,7 @@ public class bintree {
 	private binNode inserter(binNode n, double[] coords, String key,
 			double[] splits, double[] prevSplits, int level) {
 		if (n == e) { // if Empty
-			System.out.println("Watcher" + key + " has been added.");
+			System.out.println(key + " " + df.format(coords[0] - 180 ) + " " + df.format(coords[1] - 90) + " is added into the bintree");
 			return new LeafNode(coords, key, memManage);
 		} else if (n instanceof LeafNode) { // if leaf Node
 			LeafNode A = (LeafNode) n;
@@ -326,6 +326,7 @@ public class bintree {
 
 	public int regionSearch(double[] coord, double d) {
 		// Calc d from distance
+		System.out.println("Search " + df.format(coord[0]) + " " + df.format(coord[1]) + " " + df.format(d) + " returned the following watchers:");
 		coord = convert(coord);
 		// Top left = {0,0}, bottom right = {360, 180}
 		double[] bounds = { coord[0] - d, coord[1] - d, coord[0] + d,
