@@ -70,11 +70,11 @@ public class BufferPool {
     }
     
     /**
-     * gets the byte array that a MemHandle refers to
+     * gets the byte array representing a watcher
      * @param mem
      * @return
      */
-    public byte[] getByteArray(MemHandle mem){
+    public byte[] getWatcherData(MemHandle mem){
     	byte[] b = new byte[4];
     	b = buffers.getBytes(mem,2);
     	ByteBuffer temp = ByteBuffer.wrap(b);
@@ -83,6 +83,15 @@ public class BufferPool {
     	ret = buffers.getBytes((short)(mem.pos+2), s);
     	return ret;
     }
+    
+	/**
+	 * 0 is internal, 1 is leaf, -1 is empty
+	 * @param m
+	 * @return
+	 */
+	public byte[] getNodeData(MemHandle m){
+		
+	}
     
     public void remove(MemHandle mem){
     	short pos = mem.getHandle();

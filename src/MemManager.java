@@ -1,8 +1,6 @@
 
-
 import java.io.IOException;
 import java.nio.ByteBuffer;
-
 
 public class MemManager<T> {
 	int numBuff = 0;
@@ -48,7 +46,7 @@ public class MemManager<T> {
 			fileSize = (short) (fileSize + buffSize);
 		} else {
 			buffer.insert(info, pos);
-			pos.block = pos.pos/buffSize;
+			pos.block = pos.pos / buffSize;
 			freeList.list.remove(freeList.currPos);
 		}
 		return pos;
@@ -59,22 +57,27 @@ public class MemManager<T> {
 	}
 
 	public byte[] getRecord(MemHandle h) {
-		return buffer.getByteArray(h);
+		return buffer.getWatcherData(h);
+	}
+
+	public byte[] getNode(MemHandle h) {
+		return buffer.getNodeData(h);
 	}
 
 	public byte[] serialize(Watcher w) {
 		// make sure adding the size to the front
-		int len = 18 + w.getName().length()*2;
+		int len = 18 + w.getName().length() * 2;
+		ByteBuffer sz = ByteBuffer.allocate(2);
+		sz.putShort((short) (len - 2));
+
 		byte[] ret = new byte[len];
-		byte[] bytes = new byte[8];
-		bytes = ByteBuffer.allocate(4).putInt(len - 2).array();
-		
-		for(int i = 0; i < 2; i++)
-		{
-			ret[i] = bytes[2+i];
+		byte[] temp = new byte[2];
+		temp = sz.array();
+		for (int i = 0; i < 2; i++) {
+			ret[i] = temp[i];
 		}
-		
-		bytes = new byte[8];
+		byte[] bytes = new byte[8];
+
 		java.nio.ByteBuffer.wrap(bytes).putDouble(w.getX());
 		for (int i = 0; i < 8; i++) {
 			ret[i] = bytes[i];
