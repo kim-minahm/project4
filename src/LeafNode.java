@@ -82,7 +82,7 @@ public class LeafNode extends binNode {
 		}
 		
 		for(int j = 8; j < 16; j++){
-			yArray[j] = watchData[j];
+			yArray[j-8] = watchData[j];
 		}
 		
 		double x = ByteBuffer.wrap(xArray).getDouble();
