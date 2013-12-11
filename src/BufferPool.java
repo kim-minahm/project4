@@ -32,13 +32,27 @@ public class BufferPool {
 
 	public void insert(byte[] space, MemHandle mem) {
 		Buffer current = new Buffer(blocksize);
-		if (mem.block < file.size() - 1 ) {
-			current = file.get(mem.block);
-			ByteBuffer dat = current.buff;
-			dat.position(offset(mem.getHandle()));
-			dat.put(space);
+		// checks for block.
+		if (mem.block < file.size() - 1) {
+			//it fits within the buffer
+			if (offset(mem.pos) + space.length < blocksize) {
+				current = file.get(mem.block);
+				ByteBuffer dat = current.buff;
+				dat.position(offset(mem.getHandle()));
+				dat.put(space);
+			}else{
+				current = file.get(mem.block);
+				Buffer current2 = file.get(mem.block+1);
+				ByteBuffer dat = current.buff;
+				ByteBuffer dat2 = current2.buff;
+				int diff = offset(mem.pos)+space.length - blocksize;
+				dat.position(offset(mem.getHandle()));
+				dat.put(space,0,space.length-diff);
+				dat2.position(0);
+				dat.put(space,space.length-diff,diff);
+			}
 		} else {
-			while (file.size() - 1 <= mem.block ) {
+			while (file.size() - 1 <= mem.block) {
 				file.add(new Buffer(blocksize));
 				file.get(file.size() - 1).blockNum = file.size() - 1;
 			}
@@ -80,7 +94,7 @@ public class BufferPool {
 		int s = temp.get();
 		if (s == 1) {// 5 bytes, 1 sig, 4 handle
 			current.buff.get(b, offset(mem.pos), 5);
-		}else{// 9 bytes, 1 sig, 4 leftchild, 4 rightchile
+		} else {// 9 bytes, 1 sig, 4 leftchild, 4 rightchile
 			current.buff.get(b, offset(mem.pos), 9);
 		}
 		return b;
@@ -94,10 +108,10 @@ public class BufferPool {
 		int s = temp.getShort();
 		byte[] ret = new byte[s];
 		current.buff.position(offset(mem.pos));
-		current.buff.put(ret, offset(mem.pos), s);		
+		current.buff.put(ret, offset(mem.pos), s);
 	}
-	
-	public void removeNode(MemHandle mem){
+
+	public void removeNode(MemHandle mem) {
 		Buffer current = file.get(mem.block);
 		byte[] b = new byte[10];
 		current.buff.get(b, offset(mem.pos), 1);
@@ -106,7 +120,7 @@ public class BufferPool {
 		current.buff.position(offset(mem.pos));
 		if (s == 1) {// 5 bytes, 1 sig, 4 handle
 			current.buff.put(new byte[5], offset(mem.pos), 5);
-		}else{// 9 bytes, 1 sig, 4 leftchild, 4 rightchile
+		} else {// 9 bytes, 1 sig, 4 leftchild, 4 rightchile
 			current.buff.put(new byte[9], offset(mem.pos), 9);
 		}
 	}
